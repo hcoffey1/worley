@@ -1,3 +1,5 @@
+//Hayden Coffey
+//2020
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <chrono>
@@ -7,16 +9,22 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include "WPoint.hpp"
 
 uint32_t FPS_LIMIT = 60;
 int32_t SCREEN_WIDTH = 400;
 int32_t SCREEN_HEIGHT = 400;
 
+float R = 1, G = 0, B = 0;
+enum COLOR_STAGE {RG, GB, BR, COLOR_STAGE_SIZE};
+float COLOR_DELTA = 0.05;
+
 SDL_Window *WINDOW = nullptr;
 
-int distance(int a, int b, int z, int w);
+int distance(int index, const WPoint *wp);
+
 int drawWorleyNoise(SDL_Texture *texture, int pixelCount, int pixelWidth, SDL_PixelFormat *mappingFormat,
-                     const std::vector<std::pair<uint32_t, uint32_t>> * points);
+                    const std::vector<WPoint> *points);
 
 int main(int argc, char **argv)
 {
@@ -50,13 +58,13 @@ int main(int argc, char **argv)
 
     SDL_Texture *texture = SDL_CreateTexture(rend, SDL_GetWindowPixelFormat(WINDOW),
                                              SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
-    if(texture == NULL)
+    if (texture == NULL)
     {
         fprintf(stderr, "Failed to create blank texture. SDL Error: %s\n", SDL_GetError());
         return 1;
     }
 
-    SDL_PixelFormat * mappingFormat = SDL_AllocFormat(SDL_GetWindowPixelFormat(WINDOW));
+    SDL_PixelFormat *mappingFormat = SDL_AllocFormat(SDL_GetWindowPixelFormat(WINDOW));
 
     uint32_t *pixels;
     int pitch;
@@ -65,20 +73,26 @@ int main(int argc, char **argv)
         fprintf(stderr, "Failed to lock texture. SDL Error : %s\n", SDL_GetError());
         return 1;
     }
-    int pixelWidth = (pitch/4);
+    int pixelWidth = (pitch / 4);
     int pixelCount = pixelWidth * SCREEN_HEIGHT;
 
-    int numPoints = 3;
+    int numPoints = 8;
     int depth = SCREEN_WIDTH;
-    std::vector<std::pair<uint32_t, uint32_t>> points;
+
+    WPoint::initPixelSize(pixelCount, pixelWidth, SCREEN_HEIGHT, depth);
+
+    std::vector<WPoint> points;
 
     for (int i = 0; i < numPoints; i++)
     {
-        points.push_back(std::pair<uint32_t, uint32_t>(rand() % pixelCount, rand() % depth));
+        WPoint tmp;
+        tmp.setVelocity(1, 1, 1);
+        points.push_back(tmp);
     }
 
     SDL_UnlockTexture(texture);
 
+    COLOR_STAGE color_stage = RG;
     bool quit = false;
     std::chrono::_V2::system_clock::time_point time_start, time_end;
     std::chrono::duration<double> time_elapsed;
@@ -111,8 +125,28 @@ int main(int argc, char **argv)
 
         for (int i = 0; i < numPoints; i++)
         {
-            points[i].first = (points[i].first + 1) % pixelCount;
-            points[i].second = (points[i].second + 1) % depth;
+            points[i].step();
+        }
+
+        switch(color_stage)
+        {
+            case RG:
+            R -= COLOR_DELTA;
+            G += COLOR_DELTA; 
+            if(R == 0) color_stage = GB;
+            break;
+            case GB:
+            G -= COLOR_DELTA;
+            B += COLOR_DELTA; 
+            if(G == 0) color_stage = BR;
+            break;
+            case BR:
+            B -= COLOR_DELTA;
+            R += COLOR_DELTA; 
+            if(B == 0) color_stage = RG;
+            break;
+            case COLOR_STAGE_SIZE:
+            break;
         }
 
         //FPS Limiter
@@ -134,13 +168,19 @@ int main(int argc, char **argv)
     return 0;
 }
 
-int distance(int a, int b, int z, int w)
+/*int distance(int a, int b, int z, int w)
 {
     return pow(pow(z, 2) + pow((b % w - a % w), 2) + pow((b / w - a / w), 2), 0.5);
+}*/
+
+int distance(int index, const WPoint *wp)
+{
+    int32_t width = wp->getPixelWidth();
+    return pow(pow(wp->getZ(), 2) + pow((wp->getX() - index % width), 2) + pow((wp->getY() - index / width), 2), 0.5);
 }
 
 int drawWorleyNoise(SDL_Texture *texture, int pixelCount, int pixelWidth, SDL_PixelFormat *mappingFormat,
-                     const std::vector<std::pair<uint32_t, uint32_t>> * points)
+                    const std::vector<WPoint> *points)
 {
     uint32_t *pixels;
     int pitch;
@@ -156,7 +196,7 @@ int drawWorleyNoise(SDL_Texture *texture, int pixelCount, int pixelWidth, SDL_Pi
         std::vector<uint32_t> distances;
         for (int j = 0; j < numPoints; j++)
         {
-            int d = distance(i, (*points)[j].first, (*points)[j].second, pixelWidth);
+            int d = distance(i, &((*points)[j]));
             d = (d * 1.0 / SCREEN_WIDTH) * 0xff;
             if (d > 0xff)
                 d = 0xff;
@@ -164,7 +204,7 @@ int drawWorleyNoise(SDL_Texture *texture, int pixelCount, int pixelWidth, SDL_Pi
         }
         std::sort(distances.begin(), distances.end());
 
-        pixels[i] = SDL_MapRGB(mappingFormat, distances[0], distances[0], distances[0]);
+        pixels[i] = SDL_MapRGB(mappingFormat, distances[0] * R, distances[0] * G, distances[0] * B);
     }
 
     SDL_UnlockTexture(texture);
