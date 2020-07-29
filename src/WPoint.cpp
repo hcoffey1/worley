@@ -1,33 +1,36 @@
+//Hayden Coffey
+//2020
 #include "WPoint.hpp"
 
-int32_t WPoint::_pixelCount = 0;
+//Image dimensions
 int32_t WPoint::_pixelWidth = 0;
 int32_t WPoint::_pixelHeight = 0;
 int32_t WPoint::_depth = 0;
 
+//Initialize point with a random position
 WPoint::WPoint()
 {
-    if (_pixelCount)
+    if (_pixelWidth)
     {
-        _pixelIndex = rand() % _pixelCount;
-        _x = _pixelIndex % _pixelWidth;
-        _y = _pixelIndex / _pixelWidth;
+        _x = rand() % _pixelWidth;
+        _y = rand() % _pixelHeight;
         _z = rand() % _depth;
     }
     else
     {
-        _pixelIndex = _x = _y = 0;
+        _pixelIndex = _x = _y = _z = 0;
     }
 }
 
-void WPoint::initPixelSize(int pixelCount, int pixelWidth, int pixelHeight, int depth)
+//Set static values of image size
+void WPoint::initPixelSize(int pixelWidth, int pixelHeight, int depth)
 {
-    _pixelCount = pixelCount;
     _pixelWidth = pixelWidth;
     _pixelHeight = pixelHeight;
     _depth = depth;
 }
 
+//Set velocity for point
 void WPoint::setVelocity(int x, int y, int z)
 {
     _vx = x;
@@ -35,6 +38,7 @@ void WPoint::setVelocity(int x, int y, int z)
     _vz = z;
 }
 
+//Update position of point based on velocity
 void WPoint::step()
 {
     _x += _vx;
@@ -75,6 +79,7 @@ void WPoint::step()
     }
 }
 
+//Accessors
 int WPoint::getZ() const
 {
     return _z;
