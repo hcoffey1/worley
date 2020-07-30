@@ -33,15 +33,17 @@ SDL_Window *WINDOW = nullptr;
 int distance(int index, const WPoint *wp);
 
 int threaded_drawWorleyNoise(SDL_Texture *texture, int pixelCount, SDL_PixelFormat *mappingFormat,
-                             const std::vector<WPoint> *points, int threadCount);
+                             const std::vector<WPoint> *points, int threadCount, bool invert);
 
 void _threaded_drawWorleyNoise(uint32_t *pixels, const SDL_PixelFormat *mappingFormat,
-                               const std::vector<WPoint> *points, int startIndex, int endIndex);
+                               const std::vector<WPoint> *points, int startIndex, int endIndex, int theadID, bool invert);
 
 int main(int argc, char **argv)
 {
     int threadCount = 1;
     int numPoints = 1;
+    int pointVelocity = 1;
+    bool invert = false;
     char *arg;
     arg = getCmdOption(argv, argv + argc, "-threads");
     if (arg)
@@ -53,6 +55,41 @@ int main(int argc, char **argv)
     if (arg)
     {
         numPoints = atoi(arg);
+    }
+
+    arg = getCmdOption(argv, argv + argc, "-seed");
+    if (arg)
+    {
+        srand(atoi(arg));
+    }
+
+    arg = getCmdOption(argv, argv + argc, "-h");
+    if (arg)
+    {
+        SCREEN_HEIGHT = atoi(arg);
+    }
+
+    arg = getCmdOption(argv, argv + argc, "-w");
+    if (arg)
+    {
+        SCREEN_WIDTH = atoi(arg);
+    }
+
+    arg = getCmdOption(argv, argv + argc, "-d");
+    if (arg)
+    {
+        DEPTH = atoi(arg);
+    }
+
+    arg = getCmdOption(argv, argv + argc, "-v");
+    if (arg)
+    {
+        pointVelocity = atoi(arg);
+    }
+
+    if (cmdOptionExists(argv, argv + argc, "-invert"))
+    {
+        invert = true;
     }
 
     //Set up SDL to work with graphics
@@ -121,7 +158,9 @@ int main(int argc, char **argv)
     for (int i = 0; i < numPoints; i++)
     {
         WPoint tmp;
-        tmp.setVelocity(1 - 2 * (rand()%2), 1 - 2 * (rand()%2), 1 - 2 * (rand()%2));
+        tmp.setVelocity(pointVelocity - pointVelocity * 2 * (rand() % 2),
+                        pointVelocity - pointVelocity * 2 * (rand() % 2),
+                        pointVelocity - pointVelocity * 2 * (rand() % 2));
         points.push_back(tmp);
     }
 
@@ -155,7 +194,7 @@ int main(int argc, char **argv)
         }
 
         //Modify texture with Worley Noise pattern
-        threaded_drawWorleyNoise(texture, pixelCount, mappingFormat, &points, threadCount);
+        threaded_drawWorleyNoise(texture, pixelCount, mappingFormat, &points, threadCount, invert);
 
         //Render texture
         SDL_Rect renderRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
@@ -169,7 +208,7 @@ int main(int argc, char **argv)
         }
 
         //Rotate through color modifiers over many iterations
-        switch (color_stage)
+        /* switch (color_stage)
         {
         case RG:
             R -= COLOR_DELTA;
@@ -204,6 +243,7 @@ int main(int argc, char **argv)
         case COLOR_STAGE_SIZE:
             break;
         }
+        */
 
         //printf("%f %f %f\n", R, G, B);
 
@@ -223,6 +263,7 @@ int main(int argc, char **argv)
     SDL_DestroyRenderer(rend);
     SDL_DestroyWindow(WINDOW);
     SDL_Quit();
+    
 
     return 0;
 }
@@ -236,7 +277,7 @@ int distance(int index, const WPoint *wp)
 
 //Divides work needed to calculate Worley Noise pixel values over specified number of threads
 int threaded_drawWorleyNoise(SDL_Texture *texture, int pixelCount, SDL_PixelFormat *mappingFormat,
-                             const std::vector<WPoint> *points, int threadCount)
+                             const std::vector<WPoint> *points, int threadCount, bool invert)
 {
     uint32_t *pixels;
     int pitch;
@@ -254,7 +295,7 @@ int threaded_drawWorleyNoise(SDL_Texture *texture, int pixelCount, SDL_PixelForm
     std::thread *tmp;
     for (int i = 0; i < pixelCount; i += delta)
     {
-        tmp = new std::thread(_threaded_drawWorleyNoise, pixels, mappingFormat, points, i, i + delta);
+        tmp = new std::thread(_threaded_drawWorleyNoise, pixels, mappingFormat, points, i, i + delta, i/delta, invert);
         threads.push_back(tmp);
     }
 
@@ -272,7 +313,7 @@ int threaded_drawWorleyNoise(SDL_Texture *texture, int pixelCount, SDL_PixelForm
 
 //Sets pixel values to calculated Worley Noise values over specified range
 void _threaded_drawWorleyNoise(uint32_t *pixels, const SDL_PixelFormat *mappingFormat,
-                               const std::vector<WPoint> *points, int startIndex, int endIndex)
+                               const std::vector<WPoint> *points, int startIndex, int endIndex, int threadId, bool invert)
 {
     int numPoints = points->size();
     for (int i = startIndex; i < endIndex; i++)
@@ -289,8 +330,29 @@ void _threaded_drawWorleyNoise(uint32_t *pixels, const SDL_PixelFormat *mappingF
 
         //Sort distances as Worley Distance requires
         std::sort(distances.begin(), distances.end());
-        pixels[i] = SDL_MapRGB(mappingFormat, 0xff - distances[0], 0xff - distances[1], 0xff - distances[1]); //Change distances index to get different patterns
-        //pixels[i] = SDL_MapRGB(mappingFormat, 0xff - distances[0] * R, 0xff - distances[0] * G, 0xff - distances[0] * B); //Change distances index to get different patterns
+        //pixels[i] = SDL_MapRGB(mappingFormat, 0xff - distances[0], 0xff - distances[1], 0xff - distances[1]); //Change distances index to get different patterns
+
+        if (invert)
+        {
+            pixels[i] = SDL_MapRGB(mappingFormat, 0xff - distances[0], 0xff - distances[1], 0xff - distances[2]); //Change distances index to get different patterns
+            //if (threadId % 2)
+            //{
+                //pixels[i] = SDL_MapRGB(mappingFormat, (0xff - distances[0]), (0xff - distances[1])*0.9, (0xff - distances[2])*0.9); //Change distances index to get different patterns
+            //}
+            //else
+            //{
+                //pixels[i] = SDL_MapRGB(mappingFormat, (0xff - distances[0])*0.9, (0xff - distances[1]), (0xff - distances[2])*0.9); //Change distances index to get different patterns
+            //}
+
+            //   pixels[i] = SDL_MapRGB(mappingFormat, 0xff - distances[0] * R, 0xff - distances[0] * G, 0xff - distances[0] * B); //Change distances index to get different patterns
+        }
+        else
+        {
+            pixels[i] = SDL_MapRGB(mappingFormat, distances[0], distances[0], distances[0]); //Change distances index to get different patterns
+
+            //     pixels[i] = SDL_MapRGB(mappingFormat, distances[0] * R, distances[0] * G, distances[0] * B);
+        }
+
         //pixels[i] = SDL_MapRGB(mappingFormat, distances[0] * R, distances[0] * G, distances[0] * B); //Change distances index to get different patterns
     }
 }
