@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 {
     int threadCount = 1;
     int numPoints = 1;
-    int pointVelocity = 1;
+    int pointSpeed = 1;
     bool invert = false;
     char *arg;
     arg = getCmdOption(argv, argv + argc, "-threads");
@@ -81,10 +81,10 @@ int main(int argc, char **argv)
         DEPTH = atoi(arg);
     }
 
-    arg = getCmdOption(argv, argv + argc, "-v");
+    arg = getCmdOption(argv, argv + argc, "-s");
     if (arg)
     {
-        pointVelocity = atoi(arg);
+        pointSpeed = atoi(arg);
     }
 
     if (cmdOptionExists(argv, argv + argc, "-invert"))
@@ -158,9 +158,9 @@ int main(int argc, char **argv)
     for (int i = 0; i < numPoints; i++)
     {
         WPoint tmp;
-        tmp.setVelocity(pointVelocity - pointVelocity * 2 * (rand() % 2),
-                        pointVelocity - pointVelocity * 2 * (rand() % 2),
-                        pointVelocity - pointVelocity * 2 * (rand() % 2));
+        tmp.setVelocity(pointSpeed - pointSpeed * 2 * (rand() % 2),
+                        pointSpeed - pointSpeed * 2 * (rand() % 2),
+                        pointSpeed - pointSpeed * 2 * (rand() % 2));
         points.push_back(tmp);
     }
 

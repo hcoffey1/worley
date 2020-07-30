@@ -20,6 +20,18 @@ to handle the rendering.
 
 ## Usage
 
+**Command line arguments**
+|Argument|Description|
+|---        |---|
+|-points X  |Generate X central points for Worley noise algorithm|
+|-w X       |Set window width to X|
+|-h X       |Set window height to X|
+|-d X       |Set image depth (Z-axis) to X|
+|-seed X    |Use X as the seed for random point placement|
+|-threads X |Number of threads to use for Worley noise algorithm|
+|-s X       |Set speed of central points in pixels/frame|
+|-invert    |Invert colors displayed|
+
 ## References
 
 I was first introduced to Worley noise by The Coding Train's
@@ -53,7 +65,7 @@ from different configurations I've tried. You should get a much cleaner result i
 ![](img/worleyDepth2.apng)
 ![](img/worley.apng)
 
-**Multithreaded runs: two threads of execution vs four**
+**Multithreaded runs: two threads vs four**
 
 ![](img/worley2thread.apng)
 ![](img/worley4thread.apng)
