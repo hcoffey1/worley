@@ -1,10 +1,14 @@
-# Worley Noise Generator
+# Worley Noise Generator(WIP)
 
 ## Intro
 
 This project is an SDL2 based implementation of the Worley noise algorithm. 
 The algorithm is simple, but creates some really interesting patterns,
-and offers plenty of opportunities for customization to create your own designs.
+and offers plenty of opportunities for customization to create your own 
+designs. **This code can generate rapid flashing lights if you tell
+it to.** If that is something that should be avoided,
+I have some lovely 5 fps example gifs below that may offer
+a safer alternative.
 
 https://en.wikipedia.org/wiki/Worley_noise
 
@@ -14,7 +18,9 @@ https://en.wikipedia.org/wiki/Worley_noise
 The project uses <a href="https://www.libsdl.org/">SDL2</a>
 to handle the rendering.
 
-## Sources
+## Usage
+
+## References
 
 I was first introduced to Worley noise by The Coding Train's
 video on the topic where he does a great job on explaining it. I've
@@ -44,5 +50,14 @@ from different configurations I've tried. You should get a much cleaner result i
 **d<sub>1</sub> Worley noise generation with and without a
  specified depth.**
 
-![](img/worleyDepth.apng)
+![](img/worleyDepth2.apng)
 ![](img/worley.apng)
+
+**Multithreaded runs: two threads of execution vs four**
+
+![](img/worley2thread.apng)
+![](img/worley4thread.apng)
+
+**Output with inverted colors and mixture of distance settings**
+
+![](img/worleyInverted.apng)

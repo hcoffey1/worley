@@ -334,7 +334,7 @@ void _threaded_drawWorleyNoise(uint32_t *pixels, const SDL_PixelFormat *mappingF
 
         if (invert)
         {
-            pixels[i] = SDL_MapRGB(mappingFormat, 0xff - distances[0], 0xff - distances[1], 0xff - distances[2]); //Change distances index to get different patterns
+            pixels[i] = SDL_MapRGB(mappingFormat, 0xff - distances[0], 0xff - distances[2], 0xff - distances[1]); //Change distances index to get different patterns
             //if (threadId % 2)
             //{
                 //pixels[i] = SDL_MapRGB(mappingFormat, (0xff - distances[0]), (0xff - distances[1])*0.9, (0xff - distances[2])*0.9); //Change distances index to get different patterns
@@ -348,7 +348,16 @@ void _threaded_drawWorleyNoise(uint32_t *pixels, const SDL_PixelFormat *mappingF
         }
         else
         {
-            pixels[i] = SDL_MapRGB(mappingFormat, distances[0], distances[0], distances[0]); //Change distances index to get different patterns
+            //pixels[i] = SDL_MapRGB(mappingFormat, distances[0], distances[0], distances[0]); //Change distances index to get different patterns
+            if (threadId % 2)
+            {
+                pixels[i] = SDL_MapRGB(mappingFormat, (distances[0]), (distances[0])*0.7, (distances[0])*0.7); //Change distances index to get different patterns
+            }
+            else
+            {
+                pixels[i] = SDL_MapRGB(mappingFormat, (distances[0])*0.7, (distances[0]), (distances[0])*0.7); //Change distances index to get different patterns
+            }
+            //pixels[i] = SDL_MapRGB(mappingFormat, distances[0] * R, - distances[0] * G, 0xff - distances[0] * B); //Change distances index to get different patterns
 
             //     pixels[i] = SDL_MapRGB(mappingFormat, distances[0] * R, distances[0] * G, distances[0] * B);
         }
