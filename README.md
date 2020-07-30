@@ -1,4 +1,4 @@
-# Worley Noise Generator(WIP)
+# Worley Noise Generator
 
 ## Intro
 
@@ -49,7 +49,7 @@ they have dedicated a lot of time and effort to creating some great lessons.
 
 <a href="https://lazyfoo.net/tutorials/SDL/index.php">Lazy Foo' Productions</a>
 
-To parse commandline arguments, I am using a snippet
+To parse command line arguments, I am using a snippet
 <a href="https://stackoverflow.com/users/85381/iain">iain</a>
 provided on stackoverflow that
 does a nice job.
@@ -66,7 +66,7 @@ from different configurations I've tried. You should get a much cleaner result i
 ![](img/worleyDepth2.apng)
 ![](img/worley.apng)
 
-**Multithreaded runs: two threads vs four**
+**Multi-threaded runs: two threads vs four**
 
 ![](img/worley2thread.apng)
 ![](img/worley4thread.apng)
