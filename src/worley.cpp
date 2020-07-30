@@ -18,7 +18,7 @@ int32_t SCREEN_WIDTH = 400;
 int32_t SCREEN_HEIGHT = 400;
 int32_t DEPTH = 100;
 
-float R = 1, G = 0, B = 0;
+float R = 1, G = 1, B = 1;
 enum COLOR_STAGE
 {
     RG,
@@ -36,14 +36,19 @@ int threaded_drawWorleyNoise(SDL_Texture *texture, int pixelCount, SDL_PixelForm
                              const std::vector<WPoint> *points, int threadCount, bool invert);
 
 void _threaded_drawWorleyNoise(uint32_t *pixels, const SDL_PixelFormat *mappingFormat,
-                               const std::vector<WPoint> *points, int startIndex, int endIndex, int theadID, bool invert);
+                               const std::vector<WPoint> *points, int startIndex, int endIndex, int theadID);
+
+void _threaded_drawWorleyNoise_inverted(uint32_t *pixels, const SDL_PixelFormat *mappingFormat,
+                                        const std::vector<WPoint> *points, int startIndex, int endIndex, int threadId);
+
+std::vector<uint32_t> getWorleyDistanceVector(const std::vector<WPoint> *points, int numPoints, int i);
 
 int main(int argc, char **argv)
 {
     int threadCount = 1;
     int numPoints = 1;
     int pointSpeed = 1;
-    bool invert = false;
+    bool invert = false, colorCycle = false;
     char *arg;
     arg = getCmdOption(argv, argv + argc, "-threads");
     if (arg)
@@ -90,6 +95,13 @@ int main(int argc, char **argv)
     if (cmdOptionExists(argv, argv + argc, "-invert"))
     {
         invert = true;
+    }
+
+    if (cmdOptionExists(argv, argv + argc, "-colorcycle"))
+    {
+        colorCycle = true;
+        R = 1;
+        G = B = 0;
     }
 
     //Set up SDL to work with graphics
@@ -207,43 +219,45 @@ int main(int argc, char **argv)
             points[i].step();
         }
 
-        //Rotate through color modifiers over many iterations
-        /* switch (color_stage)
+        if (colorCycle)
         {
-        case RG:
-            R -= COLOR_DELTA;
-            G += COLOR_DELTA;
-            if (R <= 0)
+            //Rotate through color modifiers over many iterations
+            switch (color_stage)
             {
-                R = 0;
-                G = 1;
-                color_stage = GB;
+            case RG:
+                R -= COLOR_DELTA;
+                G += COLOR_DELTA;
+                if (R <= 0)
+                {
+                    R = 0;
+                    G = 1;
+                    color_stage = GB;
+                }
+                break;
+            case GB:
+                G -= COLOR_DELTA;
+                B += COLOR_DELTA;
+                if (G <= 0)
+                {
+                    G = 0;
+                    B = 1;
+                    color_stage = BR;
+                }
+                break;
+            case BR:
+                B -= COLOR_DELTA;
+                R += COLOR_DELTA;
+                if (B <= 0)
+                {
+                    B = 0;
+                    R = 1;
+                    color_stage = RG;
+                }
+                break;
+            case COLOR_STAGE_SIZE:
+                break;
             }
-            break;
-        case GB:
-            G -= COLOR_DELTA;
-            B += COLOR_DELTA;
-            if (G <= 0)
-            {
-                G = 0;
-                B = 1;
-                color_stage = BR;
-            }
-            break;
-        case BR:
-            B -= COLOR_DELTA;
-            R += COLOR_DELTA;
-            if (B <= 0)
-            {
-                B = 0;
-                R = 1;
-                color_stage = RG;
-            }
-            break;
-        case COLOR_STAGE_SIZE:
-            break;
         }
-        */
 
         //printf("%f %f %f\n", R, G, B);
 
@@ -263,7 +277,6 @@ int main(int argc, char **argv)
     SDL_DestroyRenderer(rend);
     SDL_DestroyWindow(WINDOW);
     SDL_Quit();
-    
 
     return 0;
 }
@@ -295,7 +308,14 @@ int threaded_drawWorleyNoise(SDL_Texture *texture, int pixelCount, SDL_PixelForm
     std::thread *tmp;
     for (int i = 0; i < pixelCount; i += delta)
     {
-        tmp = new std::thread(_threaded_drawWorleyNoise, pixels, mappingFormat, points, i, i + delta, i/delta, invert);
+        if (invert)
+        {
+            tmp = new std::thread(_threaded_drawWorleyNoise_inverted, pixels, mappingFormat, points, i, i + delta, i / delta);
+        }
+        else
+        {
+            tmp = new std::thread(_threaded_drawWorleyNoise, pixels, mappingFormat, points, i, i + delta, i / delta);
+        }
         threads.push_back(tmp);
     }
 
@@ -311,57 +331,45 @@ int threaded_drawWorleyNoise(SDL_Texture *texture, int pixelCount, SDL_PixelForm
     return 0;
 }
 
+//Returns a sorted vector of shortest->longest distances between pixel i and center points
+std::vector<uint32_t> getWorleyDistanceVector(const std::vector<WPoint> *points, int numPoints, int i)
+{
+    std::vector<uint32_t> distances;
+    for (int j = 0; j < numPoints; j++)
+    {
+        int d = distance(i, &((*points)[j]));
+        d = (d * 1.0 / SCREEN_WIDTH) * 0xff; //Transform distance into 0-255 range (pixel colors are 1 byte)
+        if (d > 0xff)
+            d = 0xff;
+        distances.push_back(d);
+    }
+
+    //Sort distances as Worley Distance requires
+    std::sort(distances.begin(), distances.end());
+
+    return distances;
+}
+
 //Sets pixel values to calculated Worley Noise values over specified range
 void _threaded_drawWorleyNoise(uint32_t *pixels, const SDL_PixelFormat *mappingFormat,
-                               const std::vector<WPoint> *points, int startIndex, int endIndex, int threadId, bool invert)
+                               const std::vector<WPoint> *points, int startIndex, int endIndex, int threadId)
 {
     int numPoints = points->size();
     for (int i = startIndex; i < endIndex; i++)
     {
-        std::vector<uint32_t> distances;
-        for (int j = 0; j < numPoints; j++)
-        {
-            int d = distance(i, &((*points)[j]));
-            d = (d * 1.0 / SCREEN_WIDTH) * 0xff; //Transform distance into 0-255 range (pixel colors are 1 byte)
-            if (d > 0xff)
-                d = 0xff;
-            distances.push_back(d);
-        }
+        std::vector<uint32_t> distances = getWorleyDistanceVector(points, numPoints, i);
+        pixels[i] = SDL_MapRGB(mappingFormat, distances[threadId % 2] * R, distances[threadId % 2] * G, distances[threadId % 2] * B); //Change distances index to get different patterns
+    }
+}
 
-        //Sort distances as Worley Distance requires
-        std::sort(distances.begin(), distances.end());
-        //pixels[i] = SDL_MapRGB(mappingFormat, 0xff - distances[0], 0xff - distances[1], 0xff - distances[1]); //Change distances index to get different patterns
-
-        if (invert)
-        {
-            pixels[i] = SDL_MapRGB(mappingFormat, 0xff - distances[0], 0xff - distances[2], 0xff - distances[1]); //Change distances index to get different patterns
-            //if (threadId % 2)
-            //{
-                //pixels[i] = SDL_MapRGB(mappingFormat, (0xff - distances[0]), (0xff - distances[1])*0.9, (0xff - distances[2])*0.9); //Change distances index to get different patterns
-            //}
-            //else
-            //{
-                //pixels[i] = SDL_MapRGB(mappingFormat, (0xff - distances[0])*0.9, (0xff - distances[1]), (0xff - distances[2])*0.9); //Change distances index to get different patterns
-            //}
-
-            //   pixels[i] = SDL_MapRGB(mappingFormat, 0xff - distances[0] * R, 0xff - distances[0] * G, 0xff - distances[0] * B); //Change distances index to get different patterns
-        }
-        else
-        {
-            //pixels[i] = SDL_MapRGB(mappingFormat, distances[0], distances[0], distances[0]); //Change distances index to get different patterns
-            if (threadId % 2)
-            {
-                pixels[i] = SDL_MapRGB(mappingFormat, (distances[0]), (distances[0])*0.7, (distances[0])*0.7); //Change distances index to get different patterns
-            }
-            else
-            {
-                pixels[i] = SDL_MapRGB(mappingFormat, (distances[0])*0.7, (distances[0]), (distances[0])*0.7); //Change distances index to get different patterns
-            }
-            //pixels[i] = SDL_MapRGB(mappingFormat, distances[0] * R, - distances[0] * G, 0xff - distances[0] * B); //Change distances index to get different patterns
-
-            //     pixels[i] = SDL_MapRGB(mappingFormat, distances[0] * R, distances[0] * G, distances[0] * B);
-        }
-
-        //pixels[i] = SDL_MapRGB(mappingFormat, distances[0] * R, distances[0] * G, distances[0] * B); //Change distances index to get different patterns
+//Sets pixel values to calculated Worley Noise values over specified range with inverted coloring
+void _threaded_drawWorleyNoise_inverted(uint32_t *pixels, const SDL_PixelFormat *mappingFormat,
+                                        const std::vector<WPoint> *points, int startIndex, int endIndex, int threadId)
+{
+    int numPoints = points->size();
+    for (int i = startIndex; i < endIndex; i++)
+    {
+        std::vector<uint32_t> distances = getWorleyDistanceVector(points, numPoints, i);
+        pixels[i] = SDL_MapRGB(mappingFormat, 0xff - distances[0] * R, 0xff - distances[1] * G, 0xff - distances[2] * B); //Change distances index to get different patterns
     }
 }

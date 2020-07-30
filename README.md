@@ -31,6 +31,7 @@ to handle the rendering.
 |-threads X |Number of threads to use for Worley noise algorithm|
 |-s X       |Set speed of central points in pixels/frame|
 |-invert    |Invert colors displayed|
+|-colorcycle|Rotate intensity of RGB values|
 
 ## References
 
