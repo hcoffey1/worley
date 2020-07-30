@@ -7,7 +7,7 @@ The algorithm is simple, but creates some really interesting patterns,
 and offers plenty of opportunities for customization to create your own 
 designs. **This code can generate rapid flashing lights if you tell
 it to.** If that is something that should be avoided,
-I have some lovely 5 fps example gifs below that may offer
+I have some lovely 5 fps examples below that may offer
 a safer alternative.
 
 https://en.wikipedia.org/wiki/Worley_noise
@@ -56,8 +56,8 @@ does a nice job.
 https://stackoverflow.com/questions/865668/how-to-parse-command-line-arguments-in-c
 ## Examples
 
-GIFs aren't really the best for displaying the output 
-(my setup isn't great either), but I've put together a couple examples
+These recordings aren't really the best for displaying the output 
+, but I've put together a couple examples
 from different configurations I've tried. You should get a much cleaner result if you run the code natively.
 
 **d<sub>1</sub> Worley noise generation with and without a
