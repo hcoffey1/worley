@@ -3,7 +3,7 @@
 
 IDIR =../include
 CC=g++
-CFLAGS= -lpthread -lSDL2 -ggdb3 -std=c++11 -Wall -lSDL2_ttf -lSDL2_image -I $(IDIR)
+CFLAGS= -lpthread -lSDL2 -ggdb3 -std=c++11 -Wall -lSDL2_image -I $(IDIR)
 
 SDIR=src
 BDIR=bin
