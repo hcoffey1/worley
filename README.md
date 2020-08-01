@@ -56,8 +56,7 @@ does a nice job.
 https://stackoverflow.com/questions/865668/how-to-parse-command-line-arguments-in-c
 ## Examples
 
-These recordings aren't really the best for displaying the output 
-, but I've put together a couple examples
+These recordings aren't really the best for displaying the output, but I've put together a couple examples
 from different configurations I've tried. You should get a much cleaner result if you run the code natively.
 
 **d<sub>1</sub> Worley noise generation with and without a
